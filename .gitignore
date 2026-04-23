@@ -52,6 +52,7 @@ Doxyfile
 /tests/test_new_index.cpp
 /tests/test_template.cpp
 /env/
+venv/
 /.ignore
 /.clang-tidy
 /data

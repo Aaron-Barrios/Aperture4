@@ -91,6 +91,9 @@ namespace Aperture {
   }
 
   HOST_DEVICE Scalar globalEmin(Scalar a, Scalar r0){
+    if (math::abs(a) < TINY) {
+      return (r0 - 2.0) / math::sqrt(r0 * (r0 - 3.0));
+    }
     Scalar r03= r0 * r0 * r0;
     Scalar term= a*a*a + a * r0 * (r0 - 2.0);
     Scalar sqrtterm = r03 * term * term;
@@ -100,6 +103,9 @@ namespace Aperture {
   }
 
   HOST_DEVICE Scalar AngularMomentum(Scalar a,  Scalar r0, Scalar E0){
+    if (math::abs(a) < TINY) {
+      return r0 / math::sqrt(r0 - 3.0);
+    }
     Scalar a3= a * a * a;
     Scalar term= a3+ a * r0 * (r0 - 2.0);
     Scalar sqrtterm = r0*r0*r0 * term * term;
