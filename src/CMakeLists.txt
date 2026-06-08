@@ -22,6 +22,7 @@ set(Aperture_src
   "systems/compute_moments.cpp"
   "systems/compute_moments_gr_ks.cpp"
   "systems/gather_momentum_space.cpp"
+  "systems/ray_tracer.cpp"
   "systems/gather_tracked_ptc.cpp"
   "systems/inverse_compton.cpp"
   "systems/field_solver_cartesian.cpp"
