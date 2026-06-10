@@ -155,13 +155,10 @@ target_link_libraries(test_exporter_mpi
   $<TARGET_NAME_IF_EXISTS:Aperture_dev>
   )
 
-add_executable(test_mpi2d "test_mpi2d_gpu.cpp")
-# target_link_libraries(test_mpi2d Aperture Aperture_dev)
-target_link_libraries(test_mpi2d
-  PUBLIC
-  Aperture
-  $<TARGET_NAME_IF_EXISTS:Aperture_dev>
-  )
+if (use_cuda OR use_hip)
+  add_aperture_executable(test_mpi2d "test_mpi2d_gpu.cpp")
+  # target_link_libraries(test_mpi2d Aperture Aperture_dev)
+endif()
 
 add_aperture_executable(test_sync_ic "test_sync_ic.hip.cpp")
 add_aperture_executable(test_sync_sph "test_spherical_synchrotron.hip.cpp")

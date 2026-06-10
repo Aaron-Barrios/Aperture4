@@ -126,7 +126,7 @@ main(int argc, char *argv[]) {
 
   // The temperature is technically constrained by the setup, but allow the user
   // to specify it if they want to.
-  double kT = 2.0 / r_pml;
+  value_t kT = static_cast<value_t>(2.0) / r_pml;
   env.params().get_value("kT", kT);
 
   bool initial_cloud = true;

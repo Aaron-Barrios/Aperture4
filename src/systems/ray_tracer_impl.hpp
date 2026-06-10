@@ -59,7 +59,7 @@ ray_tracer<Conf, ExecPolicy>::update(double dt, uint32_t step) {
   m_image->init();
 /*Note to self: why are there so many autos and value_t's? Can we just say it's all floats or something?*/
   auto num_ptr = m_num_e->host_ndptr();
-  auto flux_ptr = m_flux_e->host_ndptr();
+  auto flux_ptr = m_flux_e->host_ptrs();
   auto img_ptr = m_image->host_ndptr();
 
   auto ext = m_grid.extent();
