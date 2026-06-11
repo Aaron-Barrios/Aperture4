@@ -1,10 +1,9 @@
 #pragma once
 
 #include "ray_tracer.h"
+#include "ray_tracer_math.hpp"
 #include "framework/environment.h"
 #include "utils/logger.h"
-#include <algorithm>
-#include <cmath>
 
 namespace Aperture {
 
@@ -27,7 +26,8 @@ ray_tracer<Conf, ExecPolicy>::register_data_components() {
   sim_env().get_data("num_e", m_num_e);
   sim_env().get_data("flux_e", m_flux_e);
 
-  extent_t<2> image_ext(this->m_grid.extent()[0], this->m_grid.extent()[1]);
+  extent_t<2> image_ext(this->m_grid.reduced_dim(0),
+                        this->m_grid.reduced_dim(1));
   m_image = sim_env().template register_data<multi_array_data<value_t, 2>>(
       "image", image_ext, ExecPolicy<Conf>::data_mem_type());
   m_image->include_in_snapshot(true);
@@ -57,47 +57,41 @@ ray_tracer<Conf, ExecPolicy>::update(double dt, uint32_t step) {
   m_num_e->copy_to_host();
   m_flux_e->copy_to_host();
   m_image->init();
-/*Note to self: why are there so many autos and value_t's? Can we just say it's all floats or something?*/
+
   auto num_ptr = m_num_e->host_ndptr();
-  auto flux_ptr = m_flux_e->host_ndptr();
+  auto flux_ptr = m_flux_e->host_ptrs();
   auto img_ptr = m_image->host_ndptr();
 
-  auto ext = m_grid.extent();
-  if (ext[0] == 0 || ext[1] == 0) return;
+  auto img_ext = m_image->extent();
+  if (img_ext[0] == 0 || img_ext[1] == 0) return;
 
   constexpr value_t eps = static_cast<value_t>(1.0e-12);
-  for (uint32_t iy = 0; iy < ext[1]; ++iy) {
+  for (uint32_t iy = 0; iy < img_ext[1]; ++iy) {
     value_t line_integral = 0;
-    for (uint32_t ix = 0; ix < ext[0]; ++ix) {
-      index_t<2> pos(ix, iy);
-      auto idx = m_image->get_idx(pos);
+    for (uint32_t ix = 0; ix < img_ext[0]; ++ix) {
+      index_t<2> pixel(ix, iy);
+      index_t<2> pos(ix + m_grid.guard[0], iy + m_grid.guard[1]);
+      auto idx = m_image->get_idx(pixel);
 
       value_t n = std::max(static_cast<value_t>(0), num_ptr[idx]);
       value_t fx = flux_ptr[0][idx];
       value_t fy = flux_ptr[1][idx];
       value_t fz = flux_ptr[2][idx];
 
-      value_t inv_n = 1 / std::max(n, eps);
-      value_t vx = fx * inv_n;
-      value_t vy = fy * inv_n;
-      value_t vz = fz * inv_n;
-
-      value_t beta2 = vx * vx + vy * vy + vz * vz;
-      beta2 = std::min(beta2, static_cast<value_t>(0.999999));
-      value_t gamma = static_cast<value_t>(1) /
-                      std::sqrt(static_cast<value_t>(1) - beta2);
+      value_t vx = ray_tracer_flux_to_velocity(n, fx, eps);
+      value_t vy = ray_tracer_flux_to_velocity(n, fy, eps);
+      value_t vz = ray_tracer_flux_to_velocity(n, fz, eps);
 
       // Fixed line of sight along +x for this prototype.
-      value_t doppler = static_cast<value_t>(1) /
-                        (gamma * (static_cast<value_t>(1) - vx));
+      value_t doppler = ray_tracer_doppler_from_velocity(vx, vy, vz);
 
       // Simple emissivity closure:
       //   j = j0 * n * (1 + beam_weight * max(0, doppler - 1))
       // so density dominates, but bulk motion can brighten the ray.
-      value_t emissivity = m_base_intensity * n * (1. + m_beam_weight * std::max(static_cast<value_t>(0), 
-                        doppler - static_cast<value_t>(1)));
+      value_t emissivity = ray_tracer_emissivity(n, doppler, m_base_intensity,
+                                                 m_beam_weight);
 
-      line_integral += emissivity;
+      line_integral += emissivity * static_cast<value_t>(m_grid.delta[0]);
       img_ptr[idx] = line_integral;
     }
   }
