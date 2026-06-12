@@ -4,6 +4,9 @@
  *
  * The ray tracer integrates fluid moments (num_e + flux_e) along +x
  * at each output step, writing PGM images to disk.
+ *
+ * Build:  cmake .. && make raytrace
+ * Run:    ./problems/ray_tracing/bin/raytrace -c config.toml
  */
 
 #include "core/particles_functions.h"
@@ -12,8 +15,9 @@
 #include "framework/config.h"
 #include "framework/environment.h"
 #include "systems/compute_moments.h"
-#include "systems/field_solver_default.h"
+#include "systems/field_solver_cartesian.h"
 #include "systems/grid.h"
+#include "systems/policies/coord_policy_cartesian.hpp"
 #include "systems/policies/exec_policy_host.hpp"
 #include "systems/ptc_updater.h"
 #include "systems/ray_tracer.h"
@@ -28,32 +32,34 @@ using namespace Aperture;
 int
 main(int argc, char *argv[]) {
   typedef Config<2> Conf;
-  sim_environment env(&argc, &argv);
+  using value_t = Conf::value_t;
+
+  auto &env = sim_environment::instance(&argc, &argv);
 
   env.params().add("log_level", (int64_t)LogLevel::debug);
 
-  // --- Grid & domain ---
-  auto comm = env.register_system<domain_comm<Conf>>(env);
-  auto grid_sys = env.register_system<grid_t<Conf>>(env, *comm);
-  auto& grid = *grid_sys;
+  // --- Grid & domain (constructed directly, not via register_system) ---
+  domain_comm<Conf, exec_policy_host> comm;
+  grid_t<Conf> grid(comm);
 
   // --- Field solver ---
-  auto solver =
-      env.register_system<field_solver_default<Conf>>(env, grid, comm);
+  auto solver = env.register_system<
+      field_solver<Conf, exec_policy_host, coord_policy_cartesian>>(grid, &comm);
 
   // --- Particle pusher ---
-  auto pusher = env.register_system<ptc_updater<Conf>>(env, grid, &comm);
+  auto pusher = env.register_system<
+      ptc_updater<Conf, exec_policy_host, coord_policy_cartesian>>(grid, &comm);
 
   // --- Moment computer (produces num_e, flux_e consumed by ray tracer) ---
-  auto moments = env.register_system<compute_moments<Conf, exec_policy_host>>(
-      grid);
+  auto moments = env.register_system<compute_moments<Conf, exec_policy_host>>(grid);
 
   // --- Ray tracer ---
   auto tracer = env.register_system<ray_tracer<Conf, exec_policy_host>>(
       grid, &comm);
 
   // --- Data exporter (writes HDF5 snapshots that include the "image" array) ---
-  auto exporter = env.register_system<data_exporter<Conf>>(env, grid, comm);
+  auto exporter = env.register_system<data_exporter<Conf, exec_policy_host>>(
+      grid, &comm);
 
   env.init();
 
@@ -82,8 +88,12 @@ main(int argc, char *argv[]) {
   vector_field<Conf> *E, *B;
   sim_env().get_data("Edelta", &E);
   sim_env().get_data("Bdelta", &B);
-  E->set_to_zero();
-  B->set_to_zero();
+  E->set_values(0, [](auto x, auto y, auto z) { return 0.0; });
+  E->set_values(1, [](auto x, auto y, auto z) { return 0.0; });
+  E->set_values(2, [](auto x, auto y, auto z) { return 0.0; });
+  B->set_values(0, [](auto x, auto y, auto z) { return 0.0; });
+  B->set_values(1, [](auto x, auto y, auto z) { return 0.0; });
+  B->set_values(2, [](auto x, auto y, auto z) { return 0.0; });
 
   // --- Inject a blob of electrons with random momenta ---
   particle_data_t *ptc;
@@ -127,13 +137,13 @@ main(int argc, char *argv[]) {
 
     ptc_append_global(
         exec_tags::host{}, *ptc, grid,
-        {static_cast<Conf::value_t>(px),
-         static_cast<Conf::value_t>(py),
+        {static_cast<value_t>(px),
+         static_cast<value_t>(py),
          0.0},  // position (global)
-        {static_cast<Conf::value_t>(mom_x),
-         static_cast<Conf::value_t>(mom_y),
-         static_cast<Conf::value_t>(mom_z)},  // momentum
-        static_cast<Conf::value_t>(particle_weight),
+        {static_cast<value_t>(mom_x),
+         static_cast<value_t>(mom_y),
+         static_cast<value_t>(mom_z)},  // momentum
+        static_cast<value_t>(particle_weight),
         set_ptc_type_flag(0, type));
   }
 

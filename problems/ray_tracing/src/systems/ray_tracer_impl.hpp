@@ -123,7 +123,7 @@ ray_tracer<Conf, ExecPolicy>::write_image_pgm(const std::string& filename) const
   value_t max_value = static_cast<value_t>(0);
   for (uint32_t y = 0; y < ext[1]; ++y) {
     for (uint32_t x = 0; x < ext[0]; ++x) {
-      auto idx = m_image->get_idx(x, y);
+      auto idx = m_image->get_idx(index_t<2>(x, y));
       max_value = std::max(max_value, img[idx]);
     }
   }
@@ -141,7 +141,7 @@ ray_tracer<Conf, ExecPolicy>::write_image_pgm(const std::string& filename) const
   out << "P5\n" << ext[0] << " " << ext[1] << "\n255\n";
   for (uint32_t y = 0; y < ext[1]; ++y) {
     for (uint32_t x = 0; x < ext[0]; ++x) {
-      auto idx = m_image->get_idx(x, y);
+      auto idx = m_image->get_idx(index_t<2>(x, y));
       value_t value = img[idx] / max_value;
       value = std::clamp(value, static_cast<value_t>(0), static_cast<value_t>(1));
       unsigned char pixel = static_cast<unsigned char>(std::lround(value * 255.0));
