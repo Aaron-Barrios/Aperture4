@@ -1,5 +1,7 @@
 add_custom_target(check)
 
+include_directories(${CMAKE_SOURCE_DIR}/problems/ray_tracing/src)
+
 # add_executable(tests "test.cpp")
 add_executable(tests
   "test_util_functions.cpp"

@@ -4,6 +4,10 @@
 #include "ray_tracer_math.hpp"
 #include "framework/environment.h"
 #include "utils/logger.h"
+#include <algorithm>
+#include <fstream>
+#include <cmath>
+#include <string>
 
 namespace Aperture {
 
@@ -15,6 +19,8 @@ ray_tracer<Conf, ExecPolicy>::ray_tracer(const grid_t<Conf>& grid,
   sim_env().params().get_value("rt_output_interval", m_output_interval);
   sim_env().params().get_value("rt_base_intensity", m_base_intensity);
   sim_env().params().get_value("rt_beam_weight", m_beam_weight);
+  sim_env().params().get_value("rt_write_pgm", m_write_pgm);
+  sim_env().params().get_value("rt_pgm_prefix", m_pgm_prefix);
 }
 
 template <class Conf, template <class> class ExecPolicy>
@@ -99,6 +105,51 @@ ray_tracer<Conf, ExecPolicy>::update(double dt, uint32_t step) {
   m_image->copy_to_device();
 
   Logger::print_detail("ray_tracer: updated image at step {}", step);
+
+  if (m_write_pgm) {
+    write_image_pgm(m_pgm_prefix + "_" + std::to_string(step) + ".pgm");
+  }
+}
+
+template <class Conf, template <class> class ExecPolicy>
+void
+ray_tracer<Conf, ExecPolicy>::write_image_pgm(const std::string& filename) const {
+  if (m_image == nullptr) return;
+
+  auto img = m_image->cref();
+  auto ext = img.ext();
+  if (ext[0] == 0 || ext[1] == 0) return;
+
+  value_t max_value = static_cast<value_t>(0);
+  for (uint32_t y = 0; y < ext[1]; ++y) {
+    for (uint32_t x = 0; x < ext[0]; ++x) {
+      auto idx = m_image->get_idx(x, y);
+      max_value = std::max(max_value, img[idx]);
+    }
+  }
+
+  if (max_value <= static_cast<value_t>(0)) {
+    max_value = static_cast<value_t>(1);
+  }
+
+  std::ofstream out(filename, std::ios::binary);
+  if (!out) {
+    Logger::print_err("ray_tracer: failed to open {} for writing", filename);
+    return;
+  }
+
+  out << "P5\n" << ext[0] << " " << ext[1] << "\n255\n";
+  for (uint32_t y = 0; y < ext[1]; ++y) {
+    for (uint32_t x = 0; x < ext[0]; ++x) {
+      auto idx = m_image->get_idx(x, y);
+      value_t value = img[idx] / max_value;
+      value = std::clamp(value, static_cast<value_t>(0), static_cast<value_t>(1));
+      unsigned char pixel = static_cast<unsigned char>(std::lround(value * 255.0));
+      out.write(reinterpret_cast<const char*>(&pixel), 1);
+    }
+  }
+
+  Logger::print_info("ray_tracer: wrote {}", filename);
 }
 
 }  // namespace Aperture

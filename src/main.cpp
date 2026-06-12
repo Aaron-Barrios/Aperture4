@@ -21,7 +21,6 @@
 #include "systems/field_solver_default.h"
 #include "systems/policies/exec_policy_host.hpp"
 #include "systems/ptc_updater.h"
-#include "systems/ray_tracer.h"
 #include "systems/data_exporter.h"
 #include <iostream>
 
@@ -42,8 +41,6 @@ main(int argc, char *argv[]) {
   auto pusher = env.register_system<ptc_updater<Conf>>(env, *grid, &comm);
     auto moments = env.register_system<compute_moments<Conf, exec_policy_host>>(
       *grid);
-    auto tracer = env.register_system<ray_tracer<Conf, exec_policy_host>>(
-      *grid, &comm);
   auto exporter = env.register_system<data_exporter<Conf>>(env, *grid, comm);
 
   env.init();

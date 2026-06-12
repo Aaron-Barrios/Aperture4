@@ -1,0 +1,44 @@
+# ============================================================
+# Ray Tracer Test Problem — 2D Cartesian PIC
+# ============================================================
+
+# --- Logging ---
+log_level = 1          # debug level
+
+# --- Grid ---
+N = [128, 128]         # grid cells in x, y
+size = [10.0, 10.0]    # physical domain size
+lower = [0.0, 0.0]     # domain origin
+guard = [2, 2]         # guard cells
+
+# --- Boundary conditions ---
+periodic_boundary = [false, true]   # x: open, y: periodic
+
+# --- Time stepping ---
+dt = 0.01
+max_steps = 200
+
+# --- Particles ---
+max_ptc_num = 20000
+
+# --- Injection (custom params read by main.cpp) ---
+num_particles = 10000
+particle_energy = 5.0
+particle_weight = 1.0
+center_x = 0.5
+center_y = 0.5
+spread_x = 0.15
+spread_y = 0.15
+
+# --- Data output ---
+data_output_interval = 50      # HDF5 snapshots every N steps
+
+# --- Moment computation ---
+fld_output_interval = 5        # how often compute_moments runs
+
+# --- Ray tracer ---
+rt_output_interval = 5         # how often ray tracer updates the image
+rt_write_pgm = true            # write PGM grayscale images
+rt_pgm_prefix = "rt_image"     # filename prefix (→ rt_image_5.pgm, etc.)
+rt_base_intensity = 1.0
+rt_beam_weight = 3.0

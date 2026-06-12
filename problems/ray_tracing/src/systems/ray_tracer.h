@@ -7,6 +7,7 @@
 #include "systems/grid.h"
 #include "systems/policies.h"
 #include "utils/nonown_ptr.hpp"
+#include <string>
 
 namespace Aperture {
 
@@ -24,6 +25,7 @@ class ray_tracer : public system_t {
   void init() override;
   void register_data_components() override;
   void update(double dt, uint32_t step) override;
+  void write_image_pgm(const std::string& filename) const;
 
  protected:
   const grid_t<Conf>& m_grid;
@@ -40,6 +42,8 @@ class ray_tracer : public system_t {
   uint32_t m_output_interval = 1;
   value_t m_base_intensity = 1.0;
   value_t m_beam_weight = 3.0;
+  bool m_write_pgm = false;
+  std::string m_pgm_prefix = "rt_image";
 };
 
 }  // namespace Aperture
