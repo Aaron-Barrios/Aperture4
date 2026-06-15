@@ -31,7 +31,8 @@ spread_x = 0.15
 spread_y = 0.15
 
 # --- Data output ---
-data_output_interval = 50      # HDF5 snapshots every N steps
+snapshot_interval = 50        # HDF5 snapshots every N steps
+output_dir = "problems/ray_tracing/bin"          # directory for HDF5 and PGM output
 
 # --- Moment computation ---
 fld_output_interval = 5        # how often compute_moments runs

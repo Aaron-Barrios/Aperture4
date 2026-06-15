@@ -21,6 +21,7 @@ ray_tracer<Conf, ExecPolicy>::ray_tracer(const grid_t<Conf>& grid,
   sim_env().params().get_value("rt_beam_weight", m_beam_weight);
   sim_env().params().get_value("rt_write_pgm", m_write_pgm);
   sim_env().params().get_value("rt_pgm_prefix", m_pgm_prefix);
+  sim_env().params().get_value("output_dir", m_output_dir);
 }
 
 template <class Conf, template <class> class ExecPolicy>
@@ -29,9 +30,6 @@ ray_tracer<Conf, ExecPolicy>::~ray_tracer() = default;
 template <class Conf, template <class> class ExecPolicy>
 void
 ray_tracer<Conf, ExecPolicy>::register_data_components() {
-  sim_env().get_data("num_e", m_num_e);
-  sim_env().get_data("flux_e", m_flux_e);
-
   extent_t<2> image_ext(this->m_grid.reduced_dim(0),
                         this->m_grid.reduced_dim(1));
   m_image = sim_env().template register_data<multi_array_data<value_t, 2>>(
@@ -42,6 +40,8 @@ ray_tracer<Conf, ExecPolicy>::register_data_components() {
 template <class Conf, template <class> class ExecPolicy>
 void
 ray_tracer<Conf, ExecPolicy>::init() {
+  sim_env().get_data("num_e", m_num_e);
+  sim_env().get_data("flux_e", m_flux_e);
   Logger::print_info("ray_tracer initialized (interval={} base={} beam={})",
                      m_output_interval, m_base_intensity, m_beam_weight);
 }
@@ -107,7 +107,7 @@ ray_tracer<Conf, ExecPolicy>::update(double dt, uint32_t step) {
   Logger::print_detail("ray_tracer: updated image at step {}", step);
 
   if (m_write_pgm) {
-    write_image_pgm(m_pgm_prefix + "_" + std::to_string(step) + ".pgm");
+    write_image_pgm(m_output_dir + m_pgm_prefix + "_" + std::to_string(step) + ".pgm");
   }
 }
 
