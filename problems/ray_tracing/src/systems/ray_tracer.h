@@ -44,7 +44,6 @@ class ray_tracer : public system_t {
   value_t m_beam_weight = 3.0;
   bool m_write_pgm = false;
   std::string m_pgm_prefix = "rt_image";
-  std::string m_output_dir = "bin/";
   std::string m_output_dir = "Data/";
 };
 

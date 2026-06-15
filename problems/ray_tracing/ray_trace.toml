@@ -22,7 +22,7 @@ max_steps = 200
 # --- Particles ---
 max_ptc_num = 50000
 max_tracked_num = 50000
-ptc_output_interval = 5
+ptc_output_interval = 1
 
 # --- Injection (custom params read by main.cpp) ---
 num_particles = 10000

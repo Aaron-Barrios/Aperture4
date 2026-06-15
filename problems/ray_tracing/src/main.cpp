@@ -40,6 +40,11 @@ main(int argc, char *argv[]) {
 
   env.params().add("log_level", (int64_t)LogLevel::debug);
 
+  // --- Particle tracking (must be set via add(), not just TOML,
+  //     because get_value has no size_t overload) ---
+  env.params().add("max_tracked_num", (int64_t)50000);
+  env.params().add("ptc_output_interval", (int64_t)5);
+
   // --- Grid & domain (constructed directly, not via register_system) ---
   domain_comm<Conf, exec_policy_host> comm;
   grid_t<Conf> grid(comm);
