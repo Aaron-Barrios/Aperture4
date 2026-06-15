@@ -4,6 +4,6 @@
 
 namespace Aperture {
 
-template class ray_tracer<Config<2>, exec_policy_host>;
+template class ray_tracer<Config<3>, exec_policy_host>;
 
 }  // namespace Aperture

@@ -1,9 +1,10 @@
 /*
  * Ray tracer test problem for Aperture4.
- * Sets up a 2D Cartesian PIC simulation with the ray tracer enabled.
+ * Sets up a 3D Cartesian PIC simulation with the ray tracer enabled.
  *
- * The ray tracer integrates fluid moments (num_e + flux_e) along +x
- * at each output step, writing PGM images to disk.
+ * The ray tracer integrates fluid moments (num_e + flux_e) along z
+ * at each output step, projecting onto the (x,y) image plane as
+ * seen by an observer at +z looking back along -z.
  *
  * Build:  cmake .. && make raytrace
  * Run:    ./problems/ray_tracing/bin/raytrace -c config.toml
@@ -31,7 +32,7 @@ using namespace Aperture;
 
 int
 main(int argc, char *argv[]) {
-  typedef Config<2> Conf;
+  typedef Config<3> Conf;
   using value_t = Conf::value_t;
 
   auto &env = sim_environment::instance(&argc, &argv);
@@ -73,16 +74,20 @@ main(int argc, char *argv[]) {
   double particle_weight = 1.0;
   double center_x = 0.5;                // fractional position in domain
   double center_y = 0.5;
+  double center_z = 0.5;
   double spread_x = 0.2;               // fractional spread in domain
   double spread_y = 0.2;
+  double spread_z = 0.2;
 
   env.params().get_value("num_particles", num_particles);
   env.params().get_value("particle_energy", particle_energy);
   env.params().get_value("particle_weight", particle_weight);
   env.params().get_value("center_x", center_x);
   env.params().get_value("center_y", center_y);
+  env.params().get_value("center_z", center_z);
   env.params().get_value("spread_x", spread_x);
   env.params().get_value("spread_y", spread_y);
+  env.params().get_value("spread_z", spread_z);
 
   // --- Zero out E and B fields ---
   vector_field<Conf> *E, *B;
@@ -101,10 +106,13 @@ main(int argc, char *argv[]) {
 
   double Lx = grid.sizes[0];
   double Ly = grid.sizes[1];
+  double Lz = grid.sizes[2];
   double x0 = grid.lower[0] + Lx * center_x;
   double y0 = grid.lower[1] + Ly * center_y;
+  double z0 = grid.lower[2] + Lz * center_z;
   double sx = Lx * spread_x;
   double sy = Ly * spread_y;
+  double sz = Lz * spread_z;
 
   srand(42);  // deterministic seed for reproducibility
 
@@ -114,13 +122,17 @@ main(int argc, char *argv[]) {
     double u2 = (double)rand() / RAND_MAX;
     double u3 = (double)rand() / RAND_MAX;
     double u4 = (double)rand() / RAND_MAX;
+    double u5 = (double)rand() / RAND_MAX;
+    double u6 = (double)rand() / RAND_MAX;
 
-    // Box-Muller for x and y
+    // Box-Muller for x, y, and z
     double g1 = sqrt(-2.0 * log(max(u1, 1e-12))) * cos(2.0 * M_PI * u2);
     double g2 = sqrt(-2.0 * log(max(u3, 1e-12))) * cos(2.0 * M_PI * u4);
+    double g3 = sqrt(-2.0 * log(max(u5, 1e-12))) * cos(2.0 * M_PI * u6);
 
     double px = x0 + sx * g1;
     double py = y0 + sy * g2;
+    double pz = z0 + sz * g3;
 
     // Random velocity on a sphere of constant |p| = particle_energy
     double phi = 2.0 * M_PI * (double)rand() / RAND_MAX;
@@ -139,7 +151,7 @@ main(int argc, char *argv[]) {
         exec_tags::host{}, *ptc, grid,
         {static_cast<value_t>(px),
          static_cast<value_t>(py),
-         0.0},  // position (global)
+         static_cast<value_t>(pz)},  // position (global, 3D)
         {static_cast<value_t>(mom_x),
          static_cast<value_t>(mom_y),
          static_cast<value_t>(mom_z)},  // momentum

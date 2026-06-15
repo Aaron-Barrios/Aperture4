@@ -46,7 +46,9 @@ ray_tracer<Conf, ExecPolicy>::init() {
                      m_output_interval, m_base_intensity, m_beam_weight);
 }
 
-//How we update the intensity field
+// Integrate emissivity along z-axis (axis 2) onto a 2D (x,y) image plane.
+// Observer is at +z looking back along -z.
+// This requires Conf::dim == 3.
 template <class Conf, template <class> class ExecPolicy>
 void
 ray_tracer<Conf, ExecPolicy>::update(double dt, uint32_t step) {
@@ -57,9 +59,6 @@ ray_tracer<Conf, ExecPolicy>::update(double dt, uint32_t step) {
     return;
   }
 
-  // This tracer uses the already-computed fluid moments as an emissivity map.
-  // We integrate along the +x direction and store a brightness value for each
-  // pixel (x, y) in a 2D framebuffer.
   m_num_e->copy_to_host();
   m_flux_e->copy_to_host();
   m_image->init();
@@ -72,33 +71,41 @@ ray_tracer<Conf, ExecPolicy>::update(double dt, uint32_t step) {
   if (img_ext[0] == 0 || img_ext[1] == 0) return;
 
   constexpr value_t eps = static_cast<value_t>(1.0e-12);
+  const uint32_t nz = static_cast<uint32_t>(m_grid.reduced_dim(2));
+  const int gx = m_grid.guard[0];
+  const int gy = m_grid.guard[1];
+  const int gz = m_grid.guard[2];
+
+  // Loop over (x,y) pixels, integrating emissivity along z
   for (uint32_t iy = 0; iy < img_ext[1]; ++iy) {
-    value_t line_integral = 0;
     for (uint32_t ix = 0; ix < img_ext[0]; ++ix) {
+      value_t line_integral = 0;
+
+      for (uint32_t iz = 0; iz < nz; ++iz) {
+        // 3D cell index including guard cells
+        index_t<Conf::dim> cell_pos(ix + gx, iy + gy, iz + gz);
+        auto cell_idx = m_grid.get_idx(cell_pos);
+
+        value_t n = std::max(static_cast<value_t>(0), num_ptr[cell_idx.linear]);
+        value_t fx = flux_ptr[0][cell_idx.linear];
+        value_t fy = flux_ptr[1][cell_idx.linear];
+        value_t fz = flux_ptr[2][cell_idx.linear];
+
+        value_t vx = ray_tracer_flux_to_velocity(n, fx, eps);
+        value_t vy = ray_tracer_flux_to_velocity(n, fy, eps);
+        value_t vz = ray_tracer_flux_to_velocity(n, fz, eps);
+
+        // Observer at +z looking back along -z
+        value_t doppler = ray_tracer_doppler_from_velocity(vx, vy, vz);
+        value_t emissivity = ray_tracer_emissivity(n, doppler, m_base_intensity,
+                                                   m_beam_weight);
+
+        line_integral += emissivity * static_cast<value_t>(m_grid.delta[2]);
+      }
+
       index_t<2> pixel(ix, iy);
-      index_t<2> pos(ix + m_grid.guard[0], iy + m_grid.guard[1]);
-      auto idx = m_image->get_idx(pixel);
-
-      value_t n = std::max(static_cast<value_t>(0), num_ptr[idx]);
-      value_t fx = flux_ptr[0][idx];
-      value_t fy = flux_ptr[1][idx];
-      value_t fz = flux_ptr[2][idx];
-
-      value_t vx = ray_tracer_flux_to_velocity(n, fx, eps);
-      value_t vy = ray_tracer_flux_to_velocity(n, fy, eps);
-      value_t vz = ray_tracer_flux_to_velocity(n, fz, eps);
-
-      // Fixed line of sight along +x for this prototype.
-      value_t doppler = ray_tracer_doppler_from_velocity(vx, vy, vz);
-
-      // Simple emissivity closure:
-      //   j = j0 * n * (1 + beam_weight * max(0, doppler - 1))
-      // so density dominates, but bulk motion can brighten the ray.
-      value_t emissivity = ray_tracer_emissivity(n, doppler, m_base_intensity,
-                                                 m_beam_weight);
-
-      line_integral += emissivity * static_cast<value_t>(m_grid.delta[0]);
-      img_ptr[idx] = line_integral;
+      auto img_idx = m_image->get_idx(pixel);
+      img_ptr[img_idx] = line_integral;
     }
   }
 

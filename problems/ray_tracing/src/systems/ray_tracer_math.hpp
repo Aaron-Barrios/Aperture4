@@ -10,7 +10,9 @@ inline T ray_tracer_doppler_from_velocity(T vx, T vy, T vz) {
   T beta2 = vx * vx + vy * vy + vz * vz;
   beta2 = std::min(beta2, static_cast<T>(0.999999));
   T gamma = static_cast<T>(1) / std::sqrt(static_cast<T>(1) - beta2);
-  return static_cast<T>(1) / (gamma * (static_cast<T>(1) - vx));
+  // Observer at +z looking back along -z:
+  // line-of-sight velocity = -v_z, Doppler D = 1/(γ(1 - v_los)) = 1/(γ(1 + v_z))
+  return static_cast<T>(1) / (gamma * (static_cast<T>(1) + vz));
 }
 
 template <typename T>
