@@ -103,6 +103,7 @@ main(int argc, char *argv[]) {
   // --- Inject a blob of electrons with random momenta ---
   particle_data_t *ptc;
   sim_env().get_data("particles", &ptc);
+  ptc->include_in_snapshot(true);   // so particle x1/x2/x3 appear in fld.*.h5
 
   double Lx = grid.sizes[0];
   double Ly = grid.sizes[1];
