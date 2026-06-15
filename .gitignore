@@ -9,7 +9,6 @@ tmp/
 .ccls-cache
 *.png
 *.mp4
-*.ipynb
 *.el
 *.out
 *.un~
