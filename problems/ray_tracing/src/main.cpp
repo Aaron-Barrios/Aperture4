@@ -21,6 +21,7 @@
 #include "systems/policies/coord_policy_cartesian.hpp"
 #include "systems/policies/exec_policy_host.hpp"
 #include "systems/ptc_updater.h"
+#include "systems/gather_tracked_ptc.h"
 #include "systems/ray_tracer.h"
 #include "systems/data_exporter.h"
 #include "utils/util_functions.h"
@@ -53,6 +54,9 @@ main(int argc, char *argv[]) {
 
   // --- Moment computer (produces num_e, flux_e consumed by ray tracer) ---
   auto moments = env.register_system<compute_moments<Conf, exec_policy_host>>(grid);
+
+  // --- Tracked particle gatherer (copies tracked particles to ptc.*.h5) ---
+  auto tracker = env.register_system<gather_tracked_ptc<Conf, exec_policy_host>>(grid);
 
   // --- Ray tracer ---
   auto tracer = env.register_system<ray_tracer<Conf, exec_policy_host>>(
@@ -157,7 +161,7 @@ main(int argc, char *argv[]) {
          static_cast<value_t>(mom_y),
          static_cast<value_t>(mom_z)},  // momentum
         static_cast<value_t>(particle_weight),
-        set_ptc_type_flag(0, type));
+        set_ptc_type_flag(flag_or(PtcFlag::tracked), type));
   }
 
   Logger::print_info("Injected {} particles (E = {:.1f})", num_particles,

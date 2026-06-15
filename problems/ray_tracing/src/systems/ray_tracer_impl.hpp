@@ -21,7 +21,7 @@ ray_tracer<Conf, ExecPolicy>::ray_tracer(const grid_t<Conf>& grid,
   sim_env().params().get_value("rt_beam_weight", m_beam_weight);
   sim_env().params().get_value("rt_write_pgm", m_write_pgm);
   sim_env().params().get_value("rt_pgm_prefix", m_pgm_prefix);
-  sim_env().params().get_value("output_dir", m_output_dir);
+  sim_env().params().get_value("rt_output_dir", m_output_dir);
 }
 
 template <class Conf, template <class> class ExecPolicy>
