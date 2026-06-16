@@ -37,7 +37,7 @@ spread_z = 0.15
 
 # --- Data output ---
 snapshot_interval = 50        # HDF5 snapshots every N steps
-output_dir = "Data/"          # directory for HDF5 output
+output_dir = "problems/ray_tracing/bin/Data/"   # directory for HDF5 output
 
 # --- Moment computation ---
 fld_output_interval = 5        # how often compute_moments runs
@@ -45,7 +45,7 @@ fld_output_interval = 5        # how often compute_moments runs
 # --- Ray tracer ---
 rt_output_interval = 5         # how often ray tracer updates the image
 rt_write_pgm = true            # write PGM grayscale images
-rt_output_dir = "bin/"           # directory for PGM images
+rt_output_dir = "problems/ray_tracing/bin/Data/"  # directory for PGM images
 rt_pgm_prefix = "rt_image"     # filename prefix (→ rt_image_5.pgm, etc.)
 rt_base_intensity = 1.0
 rt_beam_weight = 3.0
