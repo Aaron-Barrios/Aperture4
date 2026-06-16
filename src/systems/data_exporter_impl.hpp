@@ -263,16 +263,22 @@ data_exporter<Conf, ExecPolicy>::update(double dt, uint32_t step) {
     datafile.write(step, "step");
     datafile.write(time, "time");
 
+    int n_tracked_found = 0;
     for (auto& it : sim_env().data_map()) {
       auto data = it.second.get();
       if (auto* ptr = dynamic_cast<tracked_particles_t*>(data)) {
-        Logger::print_detail("Writing tracked particles");
+        Logger::print_err("Writing tracked particles '{}' number={}",
+                          it.first, ptr->number());
         write(*ptr, it.first, datafile, false);
+        n_tracked_found++;
       } else if (auto* ptr = dynamic_cast<tracked_photons_t*>(data)) {
-        Logger::print_detail("Writing tracked photons");
+        Logger::print_err("Writing tracked photons '{}'", it.first);
         write(*ptr, it.first, datafile, false);
+        n_tracked_found++;
       }
     }
+    Logger::print_err("ptc output: {} tracked components found for {}",
+                      n_tracked_found, filename);
     m_ptc_num += 1;
     datafile.close();
   }

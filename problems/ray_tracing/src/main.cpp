@@ -73,6 +73,17 @@ main(int argc, char *argv[]) {
 
   env.init();
 
+  // --- DEBUG: verify params and system state ---
+  {
+    int64_t dbg_max_tracked = 0, dbg_ptc_interval = 0;
+    env.params().get_value("max_tracked_num", dbg_max_tracked);
+    env.params().get_value("ptc_output_interval", dbg_ptc_interval);
+    std::cerr << "DEBUG: max_tracked_num=" << dbg_max_tracked
+              << " ptc_output_interval=" << dbg_ptc_interval
+              << " max_ptc_num=" << env.params().get_as<int64_t>("max_ptc_num", 0)
+              << std::endl;
+  }
+
   // ============================================================
   // Initial conditions
   // ============================================================
@@ -171,6 +182,19 @@ main(int argc, char *argv[]) {
 
   Logger::print_info("Injected {} particles (E = {:.1f})", num_particles,
                      particle_energy);
+
+  // --- DEBUG: verify first particle's flag ---
+  {
+    auto& flags = ptc->flag;
+    uint32_t flag0 = flags[0];
+    std::cerr << "DEBUG: Injected " << ptc->number() << " particles. "
+              << "First particle flag=0x" << std::hex << flag0 << std::dec
+              << " has_tracked=" << check_flag(flag0, PtcFlag::tracked)
+              << " type=" << (flag0 >> 28)
+              << " cell=" << ptc->cell[0]
+              << " x1=" << ptc->x1[0]
+              << std::endl;
+  }
 
   env.run();
   return 0;

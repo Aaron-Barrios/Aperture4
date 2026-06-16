@@ -29,9 +29,11 @@ gather_tracked_ptc<Conf, ExecPolicy>::register_data_components() {}
 template <typename Conf, template <class> class ExecPolicy>
 void
 gather_tracked_ptc<Conf, ExecPolicy>::init() {
-  // Logger::print_err("Initializing tracker system");
+  Logger::print_err("Initializing gather_tracked_ptc: max_tracked_num={}", m_max_tracked);
   sim_env().params().get_value("max_tracked_num", m_max_tracked);
   sim_env().params().get_value("ptc_output_interval", m_ptc_output_interval);
+  Logger::print_err("After get_value: max_tracked_num={} ptc_output_interval={}",
+                    m_max_tracked, m_ptc_output_interval);
   sim_env().get_data("E", E);
   sim_env().get_data("B", B);
 
@@ -138,11 +140,16 @@ gather_tracked_ptc<Conf, ExecPolicy>::gather_tracked_ptc_index(
 template <typename Conf, template <class> class ExecPolicy>
 void
 gather_tracked_ptc<Conf, ExecPolicy>::update(double dt, uint32_t step) {
-  if (m_ptc_output_interval == 0 || m_max_tracked == 0) return;
+  if (m_ptc_output_interval == 0 || m_max_tracked == 0) {
+    Logger::print_err("gather_tracked_ptc::update SKIP: interval={} max_tracked={}",
+                      m_ptc_output_interval, m_max_tracked);
+    return;
+  }
 
   // Logger::print_debug_all("gathering tracked particles, {}", m_ptc_output_interval);
   // Logger::print_info("tracked_ptc size is {}", tracked_ptc->size());
   if (step % m_ptc_output_interval == 0) {
+    Logger::print_err("gather_tracked_ptc::update GATHERING at step={}", step);
     auto ext = m_grid.extent();
     if (ptc != nullptr) {
       gather_tracked_ptc_index(*ptc);
